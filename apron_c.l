@@ -1,11 +1,12 @@
 %{
 #include "stdlib.h"
 void yyerror(char *);
-#include "y.tab.h"
+#include "apron_c.tab.h"
 int yylineno;
 #define DEBUG
 %}
 INT [0-9]+
+FLOAT [0-9]*\.[0-9]+
 IP_FORMAT [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+
 STRING [A-Za-z_]+
 %%
@@ -73,17 +74,27 @@ VLAN_ID {
     yylval = atoi(yytext);
     return INT;
 }
+{FLOAT} {
+    yylval = atof(yytext);
+    return FLOAT;
+}
 IP {
 #ifdef DEBUG
     printf("IP\t: %s\n",yytext);
 #endif
     return IP;
 }
-WITH_MASK {
+WITH {
 #ifdef DEBUG
-    printf("WITH_MASK\t: %s\n",yytext);
+    printf("WITH\t: %s\n",yytext);
 #endif
-    return WITH_MASK;
+    return WITH;
+}
+MASK {
+#ifdef DEBUG
+    printf("MASK\t: %s\n",yytext);
+#endif
+    return MASK;
 }
 {IP_FORMAT} {
 #ifdef DEBUG
@@ -138,6 +149,21 @@ OR {
     printf("OR\t: %s\n",yytext);
 #endif
     return OR;
+}
+NOT {
+#ifdef DEBUG
+    printf("NOT\t: %s\n",yytext);
+#endif
+    return NOT;
+}
+AS {
+    return AS;
+}
+RULE_COUNT_PER_SWITCH {
+    return RULE_COUNT_PER_SWITCH;
+}
+SIZE_PERCENTAGE_PER_SWITCH {
+    return SIZE_PERCENTAGE_PER_SWITCH;
 }
 {STRING} {
 #ifdef DEBUG

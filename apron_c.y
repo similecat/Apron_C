@@ -1,4 +1,9 @@
 %{
+typedef char* string;
+#define YYSTYPE string
+#include <stdio.h>
+#include <string.h>
+
 int yylex(void);
 void yyerror(char *);
 %}
@@ -6,84 +11,67 @@ void yyerror(char *);
 %token ACTION
 %token OWN_FLOWS OTHERS_FLOWS ALL_FLOWS MAX_PRIORITY EVENT_INTERCEPTION MODIFY_EVENT_ORDER FLOW_LEVEL PORT_LEVEL SWITCH_LEVEL
 %token IP_SRC IP_DST TCP_SRC TCP_DST VLAN_ID
-%token INT IP WITH_MASK IP_FORMAT
+%token INT IP WITH MASK IP_FORMAT
 %token SWITCH LINK ALL_SWITCHES BORDER_SWITCHES ALL_DIRECT_LINKS ALL_PATHS_AS_LINKS VIRTUAL SINGLE_BIG_SWITCH
 %token DROP FORWARD MODIFY FIELD 
-%token AND OR
+%token AND OR NOT AS FLOAT RULE_COUNT_PER_SWITCH SIZE_PERCENTAGE_PER_SWITCH
 %token STRING
 %%
 program:
        perm_list
-       |ownership
-       |max_priority
-       |notification
-       |statistics
-       |
        ;
-ownership:
-         OWN_FLOWS
-         |OTHERS_FLOWS
-         |ALL_FLOWS
-         ;
-max_priority:
-            MAX_PRIORITY INT
-            ;
-notification:
-            EVENT_INTERCEPTION
-            |MODIFY_EVENT_ORDER
-            ;
-statistics:
-          FLOW_LEVEL
-          |PORT_LEVEL
-          |SWITCH_LEVEL
-          ;
 perm_list:
          perm
          |perm perm_list
          ;
 perm:
     PERM perm_name
-    |PERM perm_name limit_list
+    |PERM perm_name LIMITING filter_not_expr
     ;
-perm_name:
-         STRING {printf("STRING\n");}
-         ;
-limit_list:
-          limit
-          |limit limit_list
-          ;
-limit:
-     LIMITING filter
-     ;
-filter:
-      flow_predicate
-      |topo
-      |ACTION action_list
-      ;
-
+filter_not_expr:
+    NOT filter_expr
+    |filter_expr
+    ;
+filter_expr:
+    filter_term OR filter_term
+    |filter_term
+    ;
+filter_term:
+    filter_factor AND filter_factor
+    |filter_factor
+    ;
+filter_factor:
+    '(' filter_not_expr ')'
+    |flow_predicate
+    |topo
+    |ACTION action
+    |ownership
+    |max_priority
+    |flow_table
+    |notification
+    |statistics
+    ;    
 flow_predicate:
-              ip_range_list
-              |field value_list
+              ip_range
+              |field '{' value_list'}'
               ;
 field:
      TCP_SRC
      |TCP_DST
      |VLAN_ID
+     |IP_SRC
+     |IP_DST
      ;
 value_list:
-          value_range
+          value_range 
           |value_range ',' value_list
           ;
 value_range:
            INT
            |INT '-' INT
            ;
-ip_range_list:
-             ip_range
-             |ip_range OR ip_range_list
-             ;
 ip_range:
-        IP ip_format WITH_MASK ip_format
+        IP ip_format WITH MASK ip_format
         ;
 ip_format:
          IP_FORMAT
@@ -98,7 +86,7 @@ physical_topo:
 switch_set:
           ALL_SWITCHES
           |BORDER_SWITCHES
-          |sw_idx_list
+          |'{' sw_idx_list '}'
           ;
 sw_idx_list:
            sw_idx
@@ -118,7 +106,7 @@ link_list:
          ;
 link:
     link_idx
-    |path
+    |'(' path ')'
     ;
 path:
     link_idx
@@ -132,36 +120,52 @@ virtual_topo:
             ;
 switch_mapping:
               SINGLE_BIG_SWITCH
-              |switch_set
+              |'{' virtual_switch_set '}'
               ;
-switch_set:
-          sw_idx
-          |sw_idx ',' sw_idx
+virtual_switch_set:
+          switch_set AS sw_idx
+          |switch_set AS sw_idx ',' virtual_switch_set
           ;
-sw_idx:
-      INT
-      ;
-action_list:
-           action
-           |action action_list
-           ;
 action:
       DROP
-      |DROP FIELD field_list
       |FORWARD
-      |FORWARD FIELD field_list
       |MODIFY
       |MODIFY FIELD field_list
       ;
 field_list:
           field
           |field ',' field_list
+          ;    
+ownership:
+         OWN_FLOWS
+         |OTHERS_FLOWS
+         |ALL_FLOWS
+         ;
+max_priority:
+            MAX_PRIORITY INT
+            ;
+flow_table:
+    RULE_COUNT_PER_SWITCH INT
+    |SIZE_PERCENTAGE_PER_SWITCH FLOAT
+    ;
+notification:
+            EVENT_INTERCEPTION
+            |MODIFY_EVENT_ORDER
+            ;
+statistics:
+          FLOW_LEVEL
+          |PORT_LEVEL
+          |SWITCH_LEVEL
           ;
+perm_name:
+         STRING {printf("STRING\n");}
+         ;
+
 
 %%
 void yyerror(char *s){
     printf("Error :%s\n",s);
-    return 0;
+    return;
 }
 int main(void){
     yyparse();

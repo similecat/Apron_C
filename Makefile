@@ -1,11 +1,11 @@
 all:run
 
 lex:yacc 
-	lex apron_c.l
+	flex apron_c.l
 yacc:
-	yacc -d apron_c.y
+	bison -d apron_c.y
 tot:lex
-	cc lex.yy.c y.tab.c -o bas.exe
+	cc lex.yy.c apron_c.tab.c -o bas.exe
 run:tot
 	./bas.exe <file.txt
 clean:

@@ -1,0 +1,100 @@
+permission
+
+perm_list	:= perm | perm perm_list
+perm		:= PERM perm_name [LIMITING filter_expr]
+
+filter
+
+filter_expr	:= NOT filter_expr
+		| filter_expr AND filter_expr
+		| filter_expr OR filter_expr
+		| filter
+filter		:= flow_predicate
+		| topo
+		| ACTION action
+		| ownership
+		| max_priority
+		| flow_table
+		| notification
+		|statistics
+
+flow predicate
+
+flow_predicate	:= ip_range
+		| field value_list
+field		:= TCP_SRC | TCP_DST | VLAN_ID...
+value_list	:= { value_range [, value_range]* }
+value_range	:= {INT} | {INT}-{INT}
+
+ip range
+
+ip_range	:= IP ip_format WITH MASK ip_format
+ip_format	:= {INT}.{INT}.{INT}.{INT}
+
+topology
+
+topo		:= physical_topo | virtual_topo
+physical_topo	:= SWITCH switch_set AND LINK link_set
+switch_set	:= ALL_SWITCHES 
+		| BORDER_SWITCHES
+		| { sw_idx [,sw_idx]* }
+link_set	:= ALL_DIRECT_LINKS
+		| ALL_PATHS_AS_LINKS
+		| { link [,link]* }
+link		:= link_idx | path
+path		:= ( link_idx [: link_idx]* )
+virtual_topo	:= VIRTUAL SWITCH switch_mapping AND LINK link_set
+switch_mapping	:= SINGLE_BIG_SWITCH
+		| { switch_set AS sw_idx [, switch_set AS sw_idx]* }
+link_idx	:= {INT}
+sw_idx	:= {INT}
+
+flow action
+
+action		:= DROP | FORWARD | MODIFY [FIELD field_list]
+field_list	:= field | field, field_list
+field		:= IP_SRC | IP_DST | TCP_SRC | TCP_DST...
+
+flow misc
+
+ownership	:= OWN_FLOWS | OTHERS_FLOWS | ALL_FLOWS
+max_priority	:= MAX_PRIORITY {INT}
+flow_table	:= RULE_COUNT_PER_SWITCH {INT} | SIZE_PERCENTAGE_PER_SWITCH {FLOAT}
+
+notification	:= EVENT_INTERCEPTION | MODIFY_EVENT_ORDER
+
+statistics	:= FLOW_LEVEL | PORT_LEVEL | SWITCH_LEVEL
+
+
+permission cap
+
+cap_list	:= cap | cap cap_list
+cap		:= PERM perm_name [CAPPING filter] # refer to the Permission Language
+
+assertion
+
+assert_list	:= assert_stmt | assert_stmt assert_list
+assert_stmt	:= PERM perm_name ASSERT assert_expr
+assert_expr	:= NOT assert_expr
+		| assert_expr OR assert_expr
+		| assert_expr AND assert_expr
+		| boolean_expr
+boolean_expr	:= expr cmp_operator expr
+expr		:= expr arithm_optr expr
+		| func ( variable )
+		| {INT} | {FLOAT}
+cmp_optr	:= < | > | = | <= | >= | <>
+arithm_optr	:= + | - | * | /
+func		:= 'sum' | 'max' | 'min'
+variable	:= RULE_COUNT_PER_SWITCH 
+		| SIZE_PERCENTAGE_PER_SWITCH 
+		| MAX_PRIORITY
+
+mutually exclusive
+
+exclusive_list	:= exclusive | exclusive exclusive_list
+exclusive	:= EXCLUSIVE [ {INT} , {INT} ] ex_perm_expr
+ex_perm_expr	:= ex_perm_term AND ex_perm_expr | ex_perm_term
+ex_perm_term	:= ex_perm OR ex_perm_term | ex_perm
+ex_perm		:= { perm } # refer to the Permission Language
+

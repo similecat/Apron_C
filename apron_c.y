@@ -16,6 +16,7 @@ void yyerror(char *);
 %token DROP FORWARD MODIFY FIELD 
 %token AND OR NOT AS FLOAT RULE_COUNT_PER_SWITCH SIZE_PERCENTAGE_PER_SWITCH
 %token STRING
+%start program
 %%
 program:
        perm_list
@@ -26,22 +27,22 @@ perm_list:
          ;
 perm:
     PERM perm_name
-    |PERM perm_name LIMITING filter_not_expr
-    ;
-filter_not_expr:
-    NOT filter_expr
-    |filter_expr
+    |PERM perm_name LIMITING filter_expr
     ;
 filter_expr:
-    filter_term OR filter_term
-    |filter_term
+    filter_term
+    |filter_expr AND filter_term
     ;
 filter_term:
-    filter_factor AND filter_factor
-    |filter_factor
+    filter_factor
+    |filter_term OR filter_factor
     ;
 filter_factor:
-    '(' filter_not_expr ')'
+    filter_not_factor
+    |NOT filter_factor
+    ;
+filter_not_factor:
+    '(' filter_expr ')'
     |flow_predicate
     |topo
     |ACTION action

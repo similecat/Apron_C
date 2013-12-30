@@ -177,6 +177,9 @@ SIZE_PERCENTAGE_PER_SWITCH {
 [\n] {
     ++yylineno;
 }
+[(){}] {
+    return *yytext;
+}
 [ \t] ;
 . yyerror("invalid character");
 %%

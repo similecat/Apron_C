@@ -1,0 +1,7 @@
+*.exe
+*.output
+*~
+*.bak
+*.tab.c
+*.tab.h
+lex.yy.c

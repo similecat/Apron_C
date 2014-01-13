@@ -66,35 +66,31 @@ notification	:= EVENT_INTERCEPTION | MODIFY_EVENT_ORDER
 statistics	:= FLOW_LEVEL | PORT_LEVEL | SWITCH_LEVEL
 
 
-permission cap
+constraint language
 
-cap_list	:= cap | cap cap_list
-cap		:= PERM perm_name [CAPPING filter] # refer to the Permission Language
+binding
+
+var_perm := {STRING}
+app_name := {STRING}
+binding := LET var_perm '=' '{' perm_list '}'
+		| LET var_perm '=' APP app_name /* equivalent to include/import. Var "this" always binds with the perm of the current app */
+		| LET var_perm '=' perm_expr
 
 assertion
 
 assert_list	:= assert_stmt | assert_stmt assert_list
-assert_stmt	:= PERM perm_name ASSERT assert_expr
+assert_stmt	:= ASSERT assert_expr | ASSERT exclusive
 assert_expr	:= NOT assert_expr
-		| assert_expr OR assert_expr
-		| assert_expr AND assert_expr
+		| assert_expr OR boolean_expr /* AND and OR are left associative */
+		| assert_expr AND boolean_expr
+		| ( assert_expr )
 		| boolean_expr
-boolean_expr	:= expr cmp_operator expr
-expr		:= expr arithm_optr expr
-		| func ( variable )
-		| {INT} | {FLOAT}
-cmp_optr	:= < | > | = | <= | >= | <>
-arithm_optr	:= + | - | * | /
-func		:= 'sum' | 'max' | 'min'
-variable	:= RULE_COUNT_PER_SWITCH 
-		| SIZE_PERCENTAGE_PER_SWITCH 
-		| MAX_PRIORITY
+boolean_expr	:= perm_expr cmp_operator perm_expr
+cmp_optr	:= < | > | = | <= | >=
+perm_expr := var_perm 
+		| perm_expr UNION var_perm /* UNION and INTERSECT are left associative */
+		| perm_expr INTERSECT var_perm
+		| ( perm_expr )
+exclusive	:= EITHER perm_expr OR perm_expr
 
-mutually exclusive
-
-exclusive_list	:= exclusive | exclusive exclusive_list
-exclusive	:= EXCLUSIVE [ {INT} , {INT} ] ex_perm_expr
-ex_perm_expr	:= ex_perm_term AND ex_perm_expr | ex_perm_term
-ex_perm_term	:= ex_perm OR ex_perm_term | ex_perm
-ex_perm		:= { perm } # refer to the Permission Language
 
